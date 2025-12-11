@@ -1,0 +1,422 @@
+{
+  "http_tiaan": {
+    "matches": 2,
+    "wins": 2,
+    "total_damage_dealt": 220.0,
+    "total_hits": 29,
+    "damage_to": {
+      "jaryd_27": {
+        "damage": 15.0,
+        "hits": 3
+      },
+      "_keegin_": {
+        "damage": 36.0,
+        "hits": 5
+      },
+      "jared_xxii": {
+        "damage": 24.0,
+        "hits": 3
+      },
+      "smiley6403": {
+        "damage": 14.0,
+        "hits": 2
+      },
+      "mr_snowflake007": {
+        "damage": 69.0,
+        "hits": 8
+      },
+      "steyn_xvii_": {
+        "damage": 27.0,
+        "hits": 4
+      },
+      "the.real.sexysteve": {
+        "damage": 20.0,
+        "hits": 2
+      },
+      "chickilamba": {
+        "damage": 15.0,
+        "hits": 2
+      }
+    },
+    "last_played": 1765391627,
+    "biggest_rival": "mr_snowflake007"
+  },
+  "mr_snowflake007": {
+    "matches": 2,
+    "wins": 0,
+    "total_damage_dealt": 221.0,
+    "total_hits": 28,
+    "damage_to": {
+      "jared_xxii": {
+        "damage": 41.0,
+        "hits": 6
+      },
+      "chickilamba": {
+        "damage": 22.0,
+        "hits": 3
+      },
+      "_keegin_": {
+        "damage": 19.0,
+        "hits": 3
+      },
+      "the.real.sexysteve": {
+        "damage": 43.0,
+        "hits": 5
+      },
+      "http_tiaan": {
+        "damage": 69.0,
+        "hits": 8
+      },
+      "smiley6403": {
+        "damage": 7.0,
+        "hits": 1
+      },
+      "jaryd_27": {
+        "damage": 20.0,
+        "hits": 2
+      }
+    },
+    "last_played": 1765391627,
+    "biggest_rival": "http_tiaan"
+  },
+  "_keegin_": {
+    "matches": 2,
+    "wins": 0,
+    "total_damage_dealt": 219.0,
+    "total_hits": 27,
+    "damage_to": {
+      "kristen_mccallum": {
+        "damage": 16.0,
+        "hits": 2
+      },
+      "http_tiaan": {
+        "damage": 39.0,
+        "hits": 5
+      },
+      "smiley6403": {
+        "damage": 20.0,
+        "hits": 3
+      },
+      "jaryd_27": {
+        "damage": 20.0,
+        "hits": 2
+      },
+      "mr_snowflake007": {
+        "damage": 22.0,
+        "hits": 3
+      },
+      "the.real.sexysteve": {
+        "damage": 21.0,
+        "hits": 2
+      },
+      "steyn_xvii_": {
+        "damage": 24.0,
+        "hits": 3
+      },
+      "jared_xxii": {
+        "damage": 36.0,
+        "hits": 4
+      },
+      "chickilamba": {
+        "damage": 21.0,
+        "hits": 3
+      }
+    },
+    "last_played": 1765391627,
+    "biggest_rival": "http_tiaan"
+  },
+  "steyn_xvii_": {
+    "matches": 2,
+    "wins": 0,
+    "total_damage_dealt": 222.0,
+    "total_hits": 30,
+    "damage_to": {
+      "jaryd_27": {
+        "damage": 19.0,
+        "hits": 3
+      },
+      "the.real.sexysteve": {
+        "damage": 36.0,
+        "hits": 5
+      },
+      "jared_xxii": {
+        "damage": 19.0,
+        "hits": 2
+      },
+      "kristen_mccallum": {
+        "damage": 46.0,
+        "hits": 6
+      },
+      "smiley6403": {
+        "damage": 37.0,
+        "hits": 5
+      },
+      "http_tiaan": {
+        "damage": 20.0,
+        "hits": 4
+      },
+      "chickilamba": {
+        "damage": 21.0,
+        "hits": 2
+      },
+      "_keegin_": {
+        "damage": 24.0,
+        "hits": 3
+      }
+    },
+    "last_played": 1765391627,
+    "biggest_rival": "kristen_mccallum"
+  },
+  "chickilamba": {
+    "matches": 2,
+    "wins": 0,
+    "total_damage_dealt": 191.0,
+    "total_hits": 27,
+    "damage_to": {
+      "jaryd_27": {
+        "damage": 34.0,
+        "hits": 4
+      },
+      "the.real.sexysteve": {
+        "damage": 20.0,
+        "hits": 3
+      },
+      "kristen_mccallum": {
+        "damage": 26.0,
+        "hits": 4
+      },
+      "jared_xxii": {
+        "damage": 23.0,
+        "hits": 4
+      },
+      "mr_snowflake007": {
+        "damage": 14.0,
+        "hits": 3
+      },
+      "steyn_xvii_": {
+        "damage": 12.0,
+        "hits": 2
+      },
+      "smiley6403": {
+        "damage": 12.0,
+        "hits": 2
+      },
+      "http_tiaan": {
+        "damage": 25.0,
+        "hits": 2
+      },
+      "_keegin_": {
+        "damage": 25.0,
+        "hits": 3
+      }
+    },
+    "last_played": 1765391627,
+    "biggest_rival": "jaryd_27"
+  },
+  "jaryd_27": {
+    "matches": 2,
+    "wins": 0,
+    "total_damage_dealt": 204.0,
+    "total_hits": 28,
+    "damage_to": {
+      "steyn_xvii_": {
+        "damage": 26.0,
+        "hits": 3
+      },
+      "http_tiaan": {
+        "damage": 18.0,
+        "hits": 3
+      },
+      "kristen_mccallum": {
+        "damage": 30.0,
+        "hits": 3
+      },
+      "chickilamba": {
+        "damage": 24.0,
+        "hits": 4
+      },
+      "jared_xxii": {
+        "damage": 12.0,
+        "hits": 2
+      },
+      "smiley6403": {
+        "damage": 42.0,
+        "hits": 7
+      },
+      "_keegin_": {
+        "damage": 18.0,
+        "hits": 2
+      },
+      "mr_snowflake007": {
+        "damage": 15.0,
+        "hits": 2
+      },
+      "the.real.sexysteve": {
+        "damage": 19.0,
+        "hits": 2
+      }
+    },
+    "last_played": 1765391627,
+    "biggest_rival": "smiley6403"
+  },
+  "smiley6403": {
+    "matches": 2,
+    "wins": 0,
+    "total_damage_dealt": 212.0,
+    "total_hits": 31,
+    "damage_to": {
+      "kristen_mccallum": {
+        "damage": 46.0,
+        "hits": 7
+      },
+      "_keegin_": {
+        "damage": 21.0,
+        "hits": 3
+      },
+      "jaryd_27": {
+        "damage": 51.0,
+        "hits": 7
+      },
+      "steyn_xvii_": {
+        "damage": 36.0,
+        "hits": 5
+      },
+      "http_tiaan": {
+        "damage": 17.0,
+        "hits": 2
+      },
+      "mr_snowflake007": {
+        "damage": 6.0,
+        "hits": 1
+      },
+      "chickilamba": {
+        "damage": 12.0,
+        "hits": 2
+      },
+      "the.real.sexysteve": {
+        "damage": 23.0,
+        "hits": 4
+      }
+    },
+    "last_played": 1765391627,
+    "biggest_rival": "jaryd_27"
+  },
+  "jared_xxii": {
+    "matches": 2,
+    "wins": 0,
+    "total_damage_dealt": 219.0,
+    "total_hits": 30,
+    "damage_to": {
+      "mr_snowflake007": {
+        "damage": 45.0,
+        "hits": 6
+      },
+      "the.real.sexysteve": {
+        "damage": 19.0,
+        "hits": 3
+      },
+      "http_tiaan": {
+        "damage": 19.0,
+        "hits": 3
+      },
+      "steyn_xvii_": {
+        "damage": 14.0,
+        "hits": 2
+      },
+      "kristen_mccallum": {
+        "damage": 42.0,
+        "hits": 6
+      },
+      "chickilamba": {
+        "damage": 29.0,
+        "hits": 4
+      },
+      "jaryd_27": {
+        "damage": 13.0,
+        "hits": 2
+      },
+      "_keegin_": {
+        "damage": 38.0,
+        "hits": 4
+      }
+    },
+    "last_played": 1765391627,
+    "biggest_rival": "mr_snowflake007"
+  },
+  "kristen_mccallum": {
+    "matches": 2,
+    "wins": 0,
+    "total_damage_dealt": 186.0,
+    "total_hits": 28,
+    "damage_to": {
+      "_keegin_": {
+        "damage": 11.0,
+        "hits": 2
+      },
+      "smiley6403": {
+        "damage": 50.0,
+        "hits": 7
+      },
+      "jaryd_27": {
+        "damage": 20.0,
+        "hits": 3
+      },
+      "chickilamba": {
+        "damage": 29.0,
+        "hits": 4
+      },
+      "steyn_xvii_": {
+        "damage": 39.0,
+        "hits": 6
+      },
+      "jared_xxii": {
+        "damage": 37.0,
+        "hits": 6
+      }
+    },
+    "last_played": 1765391627,
+    "biggest_rival": "smiley6403"
+  },
+  "the.real.sexysteve": {
+    "matches": 2,
+    "wins": 0,
+    "total_damage_dealt": 198.0,
+    "total_hits": 26,
+    "damage_to": {
+      "jared_xxii": {
+        "damage": 20.0,
+        "hits": 3
+      },
+      "steyn_xvii_": {
+        "damage": 34.0,
+        "hits": 5
+      },
+      "chickilamba": {
+        "damage": 19.0,
+        "hits": 3
+      },
+      "mr_snowflake007": {
+        "damage": 42.0,
+        "hits": 5
+      },
+      "_keegin_": {
+        "damage": 21.0,
+        "hits": 2
+      },
+      "http_tiaan": {
+        "damage": 13.0,
+        "hits": 2
+      },
+      "smiley6403": {
+        "damage": 26.0,
+        "hits": 4
+      },
+      "jaryd_27": {
+        "damage": 23.0,
+        "hits": 2
+      }
+    },
+    "last_played": 1765391627,
+    "biggest_rival": "mr_snowflake007"
+  }
+}

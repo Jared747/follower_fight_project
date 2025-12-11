@@ -1,0 +1,3 @@
+"""
+Application entrypoints (UI/frontends).
+"""

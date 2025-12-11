@@ -1,0 +1,22 @@
+{
+  "http_tiaan": {
+    "borders": [],
+    "hats": [],
+    "effects": [],
+    "powerups": []
+  },
+  "jared_xxii": {
+    "borders": [
+      "Red Steel",
+      "Neon Pulse"
+    ],
+    "hats": [],
+    "effects": [],
+    "powerups": [],
+    "applied": {
+      "borders": "Red Steel",
+      "hats": "",
+      "effects": ""
+    }
+  }
+}
