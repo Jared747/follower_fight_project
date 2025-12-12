@@ -1,22 +1,63 @@
 {
   "http_tiaan": {
     "borders": [],
-    "hats": [],
     "effects": [],
-    "powerups": []
+    "powerups": [],
+    "masks": [],
+    "applied": {
+      "borders": "",
+      "masks": "",
+      "effects": ""
+    }
   },
   "jared_xxii": {
     "borders": [
       "Red Steel",
       "Neon Pulse"
     ],
-    "hats": [],
-    "effects": [],
+    "effects": [
+      "Wave Pulse"
+    ],
     "powerups": [],
     "applied": {
-      "borders": "Red Steel",
-      "hats": "",
-      "effects": ""
-    }
+      "borders": "",
+      "effects": "",
+      "masks": "Spartan Helm"
+    },
+    "masks": [
+      "Spartan Helm"
+    ]
+  },
+  "jaryd_27": {
+    "borders": [
+      "Neon Pulse"
+    ],
+    "effects": [
+      "Wave Pulse"
+    ],
+    "powerups": [],
+    "applied": {
+      "borders": "",
+      "effects": "Wave Pulse",
+      "masks": ""
+    },
+    "masks": []
+  },
+  "kristen_mccallum": {
+    "borders": [
+      "Red Steel"
+    ],
+    "effects": [
+      "Wave Pulse"
+    ],
+    "powerups": [],
+    "applied": {
+      "borders": "",
+      "effects": "Wave Pulse",
+      "masks": ""
+    },
+    "masks": [
+      "Cowboy"
+    ]
   }
 }

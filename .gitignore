@@ -1,0 +1,20 @@
+# Python env and caches
+.env
+.venv/
+__pycache__/
+*.py[cod]
+
+# Local/runtime artifacts (not needed for the web app code)
+data/
+battles/
+sessions/
+follower_pp/
+assets/fight_theme*.mp3
+
+# CLI utilities and local scripts
+scripts/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.log

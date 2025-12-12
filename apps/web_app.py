@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import base64
 import io
+import argparse
+import mimetypes
+import os
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -9,12 +12,35 @@ import pandas as pd
 import streamlit as st
 from PIL import Image
 
+from ufc_fight.cosmetics import mask_data_uri
 from ufc_fight.followers import get_followers
 from ufc_fight.settings import get_settings
 from ufc_fight.storage import load_json, save_json
 
+
+def _apply_env_override() -> None:
+    """Allow `--env dev|prod` or trailing `dev|prod` (e.g., `-- dev`)."""
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--env", dest="env_override", choices=["dev", "prod"])
+    args, extras = parser.parse_known_args()
+
+    env_override = args.env_override
+    if not env_override:
+        for token in extras:
+            if token in {"dev", "prod"}:
+                env_override = token
+                break
+
+    if env_override:
+        os.environ["UFC_ENV"] = env_override
+        get_settings.cache_clear()
+
+
+_apply_env_override()
 settings = get_settings()
 
+LOGO_PATH = settings.assets_dir / "ufc_logo.png"
+PAGE_ICON = str(LOGO_PATH) if LOGO_PATH.exists() else "[UFC]"
 PROFILE_DIR = settings.profile_dir
 STRIPE_SECRET_KEY = settings.stripe_secret_key
 PAYMENT_MODE = settings.payment_mode
@@ -67,17 +93,82 @@ def encode_image(path: Path | str, width: int = 220) -> str:
     if not p.exists() or not p.is_file():
         return ""
     try:
+        mime, _ = mimetypes.guess_type(p.name)
+        mime = mime or "image/jpeg"
         with open(p, "rb") as handle:
             b64 = base64.b64encode(handle.read()).decode("utf-8")
-        return f"data:image/jpeg;base64,{b64}"
+        return f"data:{mime};base64,{b64}"
     except Exception:
         return ""
+
+
+def load_customizations_data() -> Dict[str, Dict[str, object]]:
+    data = load_json(CUSTOM_PATH, {})
+    return data if isinstance(data, dict) else {}
+
+
+def get_active_mask(user: str, custom_data: Optional[Dict[str, object]] = None) -> str:
+    data = custom_data if isinstance(custom_data, dict) else load_customizations_data()
+    user_store = data.get(user, {}) if isinstance(data, dict) else {}
+    applied = user_store.get("applied", {}) if isinstance(user_store.get("applied"), dict) else {}
+    # Backward compatibility: copy legacy headgear key to masks
+    if "masks" not in applied and "hats" in applied:
+        applied["masks"] = applied.get("hats", "")
+    mask = applied.get("masks") if isinstance(applied, dict) else ""
+    if not mask:
+        masks = user_store.get("masks", []) or user_store.get("hats", [])
+        if isinstance(masks, list) and masks:
+            mask = masks[0]
+    return mask or ""
+
+
+def avatar_with_mask_html(pic_src: str, mask_name: str, size: int = 36, margin_right: int = 0, initial: str = "") -> str:
+    fallback = (initial or "").strip()[:1].upper()
+    avatar_html = (
+        f"<div style='width:{size}px;height:{size}px;border-radius:50%;background:linear-gradient(135deg,#1f1f1f,#0d0d0d);"
+        f"border:1px solid #ff3b3b55;color:#ffdedb;display:flex;align-items:center;justify-content:center;font-weight:700;'>"
+        f"{fallback}</div>"
+        if not pic_src
+        else f"<img src='{pic_src}' style='width:{size}px;height:{size}px;border-radius:50%;object-fit:cover;object-position:center;border:1px solid #ff3b3b55;' />"
+    )
+    mask_html = ""
+    if mask_name:
+        # Slightly smaller mask and positioned well above the circle
+        mask_width = int(size * 0.65)
+        mask_uri = mask_data_uri(mask_name, size=mask_width)
+        mask_offset = int(size * 0.78)
+        mask_html = (
+            f"<img src='{mask_uri}' class='avatar-mask' alt='{mask_name}' "
+            f"style='position:absolute; left:50%; transform:translateX(-50%); width:{mask_width}px; top:-{mask_offset}px;' />"
+        )
+    style = f"position:relative;width:{size}px;height:{size}px;overflow:visible;"
+    if margin_right:
+        style += f"margin-right:{margin_right}px;"
+    return f"<div class='avatar-with-mask' style='{style}'>{avatar_html}{mask_html}</div>"
+
+
+def crown_svg() -> str:
+    return (
+        "<span style='display:inline-flex;align-items:center;margin-left:6px;' title='Match winner'>"
+        "<svg width='18' height='16' viewBox='0 0 24 16' fill='none' xmlns='http://www.w3.org/2000/svg'>"
+        "<path d='M3 13.5L3.8 5.7L7.6 9.8L12 3L16.4 9.8L20.2 5.7L21 13.5C21 13.8 20.8 14 20.5 14H3.5C3.2 14 3 13.8 3 13.5Z' fill='#F6C343'/>"
+        "<path d='M3 13.5C3 13.8 3.2 14 3.5 14H20.5C20.8 14 21 13.8 21 13.5V15C21 15.3 20.8 15.5 20.5 15.5H3.5C3.2 15.5 3 15.3 3 15V13.5Z' fill='#C38900'/>"
+        "<circle cx='12' cy='3' r='1.4' fill='#FFD76A'/>"
+        "<circle cx='7.5' cy='9.5' r='1.2' fill='#FFD76A'/>"
+        "<circle cx='16.5' cy='9.5' r='1.2' fill='#FFD76A'/>"
+        "</svg>"
+        "</span>"
+    )
 
 
 def set_applied(user: str, category: str, item: str) -> None:
     data = load_json(CUSTOM_PATH, {})
     user_store = ensure_custom(user)
-    user_store["applied"][category] = item
+    # Only one cosmetic can be active at a time across all categories
+    applied = {c: "" for c in ["borders", "masks", "effects"]}
+    if category in applied:
+        applied[category] = item
+    user_store["applied"] = applied
     data[user] = user_store
     save_json(CUSTOM_PATH, data)
 
@@ -125,11 +216,24 @@ def ensure_custom(user: str) -> Dict[str, List[str]]:
     data = load_json(CUSTOM_PATH, {})
     user_store = data.get(
         user,
-        {"borders": [], "hats": [], "effects": [], "powerups": [], "applied": {"borders": "", "hats": "", "effects": ""}},
+        {"borders": [], "masks": [], "effects": [], "powerups": [], "applied": {"borders": "", "masks": "", "effects": ""}},
     )
+    if "masks" not in user_store and "hats" in user_store:
+        user_store["masks"] = user_store.get("hats", [])
+        user_store.pop("hats", None)
     applied = user_store.get("applied", {})
-    for cat in ["borders", "hats", "effects"]:
+    if not isinstance(applied, dict):
+        applied = {}
+    if "masks" not in applied and "hats" in applied:
+        applied["masks"] = applied.get("hats", "")
+        applied.pop("hats", None)
+    for cat in ["borders", "masks", "effects"]:
         applied.setdefault(cat, "")
+    # Enforce a single active cosmetic; keep the first non-empty entry
+    non_empty = [(cat, val) for cat, val in applied.items() if val]
+    if len(non_empty) > 1:
+        keep_cat, keep_val = non_empty[0]
+        applied = {cat: (keep_val if cat == keep_cat else "") for cat in ["borders", "masks", "effects"]}
     user_store["applied"] = applied
     data[user] = user_store
     save_json(CUSTOM_PATH, data)
@@ -158,9 +262,11 @@ def inject_css() -> None:
     [data-testid="stSidebar"] .stButton>button:hover {border-color:#ff5555; color:#fff;}
     [data-testid="stSidebar"] .nav-tab {padding:12px 14px; border-radius:12px; border:1px solid #ff3b3b55; background:#1a0a0a; color:#f5f5f5; font-weight:700; letter-spacing:0.5px; text-align:center; margin-bottom:8px;}
     [data-testid="stSidebar"] .nav-tab.active {background:linear-gradient(90deg,#ff3b3b,#b10000); border-color:#ff3b3b; color:#fff;}
-    .preview-frame {width:128px; height:128px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:auto; background:linear-gradient(135deg,#1c1c1c,#0a0a0a); position:relative; box-shadow:0 8px 28px rgba(0,0,0,0.45);}
+    .preview-frame {width:128px; height:128px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:auto; background:linear-gradient(135deg,#1c1c1c,#0a0a0a); position:relative; overflow:visible; box-shadow:0 8px 28px rgba(0,0,0,0.45);}
     .preview-avatar-img {width:116px; height:116px; border-radius:50%; object-fit:cover; object-position:center;}
-    .preview-hat {position:absolute; top:-8px; font-size:28px;}
+    .preview-mask {position:absolute; top:-52px; left:50%; transform:translateX(-50%); width:52px; pointer-events:none; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.45));}
+    .avatar-with-mask {overflow:visible;}
+    .avatar-mask {position:absolute; left:50%; transform:translateX(-50%); top:-28px; width:30px; pointer-events:none; filter:drop-shadow(0 3px 10px rgba(0,0,0,0.5));}
     .preview-effect {position:absolute; inset:-6px; border-radius:50%; box-shadow:0 0 18px 6px rgba(255,59,59,0.35);}
     </style>
     """
@@ -230,10 +336,20 @@ def render_sidebar_nav() -> str:
 
 
 def top_bar(user: str) -> None:
-    st.markdown(
-        "<div style='text-align:center;font-size:36px;font-weight:700;letter-spacing:4px;color:#ff3b3b;'>UFC</div>",
-        unsafe_allow_html=True,
-    )
+    logo_src = encode_image(LOGO_PATH)
+    if logo_src:
+        st.markdown(
+            f"<div style='text-align:center;padding:8px 0 14px 0;'>"
+            f"<img src=\"{logo_src}\" alt=\"UFC\" "
+            f"style='width:260px;max-width:40vw;height:auto;object-fit:contain;display:block;margin:0 auto;'/>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+    else:
+        st.markdown(
+            "<div style='text-align:center;font-size:36px;font-weight:700;letter-spacing:4px;color:#ff3b3b;'>UFC</div>",
+            unsafe_allow_html=True,
+        )
 
 
 def load_scoreboard_df() -> pd.DataFrame:
@@ -255,6 +371,7 @@ def leaderboard_page() -> None:
     )
     stats = load_json(STATS_PATH, {})
     board = load_json(SCOREBOARD_PATH, {})
+    custom_data = load_customizations_data()
     if not board:
         st.info("No fights recorded yet.")
         return
@@ -290,20 +407,18 @@ def leaderboard_page() -> None:
 
     row_html_parts = []
     for row in rows:
-        crown = " *" if row["wins"] > 0 else ""
-        avatar = ""
-        if row["pic"]:
-            avatar = (
-                f"<img src='{row['pic']}' style='width:36px;height:36px;border-radius:50%;object-fit:cover;"
-                "margin-right:10px;border:1px solid #ff3b3b55;'/>"
-            )
+        crown = crown_svg() if row["wins"] > 0 else ""
+        mask_name = get_active_mask(row["user"], custom_data)
+        avatar = avatar_with_mask_html(row["pic"], mask_name, size=36, margin_right=10, initial=row["user"][:1])
         row_html_parts.append(
             f"""
             <div style="display:grid;grid-template-columns:90px 1.6fr 1fr 1fr 1fr;gap:12px;
                         padding:12px 16px;margin-top:10px;border-radius:12px;
                         border:1px solid #ffffff18;background:#0f0c0c;color:#f5f5f5;
                         align-items:center;">
-                <div style="font-weight:700;color:#ffdedb;">#{row['rank']}{crown}</div>
+                <div style="font-weight:700;color:#ffdedb;display:flex;align-items:center;gap:6px;">
+                    <span>#{row['rank']}</span>{crown}
+                </div>
                 <div style="display:flex;align-items:center;font-weight:600;">{avatar}<span>@{row['user']}</span></div>
                 <div style="text-align:right;">{row['points']}</div>
                 <div style="text-align:right;">{row['runs']}</div>
@@ -317,6 +432,7 @@ def leaderboard_page() -> None:
 
 def my_stats_page(user: str) -> None:
     stats = load_json(STATS_PATH, {})
+    custom_data = load_customizations_data()
     entry = stats.get(user, {})
     matches = entry.get("matches", 0)
     wins = entry.get("wins", 0)
@@ -330,8 +446,10 @@ def my_stats_page(user: str) -> None:
     col_pic, col_meta = st.columns([2, 3])
     with col_pic:
         pic = get_profile_pic(user)
-        if pic:
-            st.image(pic, width=220)
+        pic_src = encode_image(pic) if pic else ""
+        mask_name = get_active_mask(user, custom_data)
+        avatar_html = avatar_with_mask_html(pic_src, mask_name, size=220, initial=user)
+        st.markdown(avatar_html, unsafe_allow_html=True)
     with col_meta:
         stat_html = f"""
         <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
@@ -393,8 +511,8 @@ def my_stats_page(user: str) -> None:
 
 STORE_ITEMS = {
     "borders": [{"name": "Red Steel", "price": 0}, {"name": "Neon Pulse", "price": 0}],
-    "hats": [{"name": "Spartan Helm", "price": 10}, {"name": "Cowboy", "price": 10}],
-    "effects": [{"name": "Arc Zap", "price": 15}, {"name": "Wave Pulse", "price": 15}],
+    "masks": [{"name": "Spartan Helm", "price": 0}, {"name": "Cowboy", "price": 0}],
+    "effects": [{"name": "Arc Zap", "price": 0}, {"name": "Wave Pulse", "price": 0}],
     "powerups": [
         {"name": "Healer (+20% HP)", "price": 50},
         {"name": "Soldier (+20% dmg)", "price": 50},
@@ -420,12 +538,12 @@ def character_page(user: str) -> None:
 
     def preview_html(category: str, item_name: str) -> str:
         border_color = "#ff3b3b"
-        hat_icon = ""
+        mask_icon = ""
         effect_glow = ""
         if category == "borders":
             border_color = "#ff3b3b" if "Red" in item_name else "#00e0ff"
-        if category == "hats":
-            hat_icon = "^" if "Spartan" in item_name else "~"
+        if category == "masks":
+            mask_icon = mask_data_uri(item_name, size=60)
             border_color = "#111"
         if category == "effects":
             border_color = "#222"
@@ -440,11 +558,11 @@ def character_page(user: str) -> None:
             if avatar_src
             else "<div class='preview-avatar-img' style='background:linear-gradient(135deg,#222,#111);'></div>"
         )
-        hat_html = f"<div class='preview-hat'>{hat_icon}</div>" if hat_icon else ""
+        mask_html = f"<img class='preview-mask' src='{mask_icon}' alt='{item_name} mask' />" if mask_icon else ""
         effect_html = f"<div class='preview-effect' style='{effect_glow}'></div>" if effect_glow else ""
-        return f"<div class='preview-frame' style='border:3px solid {border_color};'>{avatar_img}{hat_html}{effect_html}</div>"
+        return f"<div class='preview-frame' style='border:3px solid {border_color};'>{avatar_img}{mask_html}{effect_html}</div>"
 
-    for category in ["borders", "hats", "effects"]:
+    for category in ["borders", "masks", "effects"]:
         st.markdown(
             f"<h4 style='color:#ffdedb;letter-spacing:1px;margin:16px 0 8px 0;'>{category.title()}</h4>",
             unsafe_allow_html=True,
@@ -477,21 +595,21 @@ def character_page(user: str) -> None:
                         if st.button("Apply", key=f"apply-{category}-{item['name']}"):
                             set_applied(user, category, item["name"])
                             st.success(f"Applied {item['name']}")
-                            st.experimental_rerun()
+                            st.rerun()
                 else:
                     if price == 0:
                         if st.button("Claim (Free)", key=f"claim-{category}-{item['name']}"):
                             acquire_item(user, category, item["name"])
                             set_applied(user, category, item["name"])
                             st.success(f"Claimed {item['name']}")
-                            st.experimental_rerun()
+                            st.rerun()
                     else:
                         if st.button(f"Buy {item['name']}", key=f"buy-{category}-{item['name']}"):
                             if PAYMENT_MODE != "prod":
                                 acquire_item(user, category, item["name"])
                                 set_applied(user, category, item["name"])
                                 st.success(f"Purchased {item['name']} (dev mode)")
-                                st.experimental_rerun()
+                                st.rerun()
                             else:
                                 prompt_purchase(item["name"])
 
@@ -527,15 +645,20 @@ def powerups_page(user: str) -> None:
                     if st.button("Claim (Free)", key=f"claim-power-{item['name']}"):
                         acquire_item(user, "powerups", item["name"])
                         st.success(f"Claimed {item['name']}")
-                        st.experimental_rerun()
+                        st.rerun()
                 else:
                     if st.button(f"Buy {item['name']}", key=f"buy-power-{item['name']}"):
                         if PAYMENT_MODE != "prod":
                             acquire_item(user, "powerups", item["name"])
                             st.success(f"Purchased {item['name']} (dev mode)")
-                            st.experimental_rerun()
+                            st.rerun()
                         else:
                             prompt_purchase(item["name"])
+
+
+def powerups_placeholder() -> None:
+    st.markdown("### Power Ups")
+    st.info("Comming soon")
 
 
 def support_page() -> None:
@@ -544,7 +667,7 @@ def support_page() -> None:
 
 
 def app():
-    st.set_page_config(page_title="UFC Follower Fight", layout="wide", page_icon="[UFC]")
+    st.set_page_config(page_title="Ultimate Followers Championship", layout="wide", page_icon=PAGE_ICON)
     inject_css()
     followers = load_followers_cache()
     user = st.session_state.get("user")
@@ -567,7 +690,8 @@ def app():
     elif nav == "Character":
         character_page(user)
     elif nav == "Power Ups":
-        powerups_page(user)
+        # powerups_page(user)  # Temporarily disabled; keep logic for future use
+        powerups_placeholder()
     else:
         support_page()
 

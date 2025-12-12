@@ -24,6 +24,9 @@ class Settings:
     stats_path: Path
     custom_path: Path
     last_run_path: Path
+    last_run_damage_path: Path
+    last_run_scoreboard_backup_path: Path
+    last_run_stats_backup_path: Path
     follower_cache_path: Path
     profile_dir: Path
     sound_path: Path
@@ -72,6 +75,9 @@ def get_settings() -> Settings:
         stats_path=_env_json_path(env, base_data, "stats"),
         custom_path=_env_json_path(env, base_data, "customizations"),
         last_run_path=_env_json_path(env, base_data, "last_run_ranking"),
+        last_run_damage_path=_env_json_path(env, base_data, "last_run_damage"),
+        last_run_scoreboard_backup_path=_env_json_path(env, base_data, "last_run_scoreboard_backup"),
+        last_run_stats_backup_path=_env_json_path(env, base_data, "last_run_stats_backup"),
         follower_cache_path=_env_json_path(env, base_data, "followers_cache"),
         profile_dir=Path("follower_pp"),
         sound_path=assets_dir / "fight_theme.mp3",

@@ -12,6 +12,7 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from moviepy.editor import AudioFileClip
 from moviepy.video.io.ImageSequenceClip import ImageSequenceClip
 
+from .cosmetics import apply_mask_to_avatar
 from .followers import Follower, download_profile_pics, get_followers
 from .scoreboard import update_scoreboard
 from .settings import Settings, get_settings
@@ -32,6 +33,7 @@ class Sprite:
     death_frame: int | None = None
     last_hit_frame: int = -999
     base_image: Image.Image | None = None
+    effect_name: str = ""
 
 
 @dataclass
@@ -45,17 +47,18 @@ class BattleOutcome:
 class BattleConfig:
     width: int = 1080
     height: int = 1920
+    arena_vertical_scale: float = 0.82
     fps: int = 30
     max_fighters: int = 50
     restitution: float = 0.85
     collision_cooldown_frames: int = 6
-    min_damage: int = 6
-    max_damage: int = 18
+    min_damage: int = 5
+    max_damage: int = 14
     win_hold_seconds: int = 5
     min_size_factor: float = 0.78
     max_size_factor: float = 1.35
-    early_damage_scale: float = 0.55
-    late_damage_scale: float = 1.15
+    early_damage_scale: float = 0.5
+    late_damage_scale: float = 1.0
 
 
 class VideoFightSimulator:
@@ -65,8 +68,11 @@ class VideoFightSimulator:
         self.settings = settings or get_settings()
         self.config = config or BattleConfig()
         self.octagon_center_y = (self.config.height - 120) / 2
-        self.arena_top = self.octagon_center_y - self.config.width / 2
-        self.arena_bottom = self.arena_top + self.config.width
+        arena_height = self.config.width * self.config.arena_vertical_scale
+        max_arena_height = max(400.0, self.config.height - 240.0)
+        self.arena_height = max(320.0, min(arena_height, max_arena_height))
+        self.arena_top = self.octagon_center_y - self.arena_height / 2
+        self.arena_bottom = self.octagon_center_y + self.arena_height / 2
         self.sprite_size = 128
         self.sprite_radius = self.sprite_size / 2
         self.sprite_min_size = self.sprite_size
@@ -95,8 +101,10 @@ class VideoFightSimulator:
         video_path = self._write_video(frames)
         ranking = self._build_ranking(sprites, len(frames))
 
+        self._backup_run_state()
         update_scoreboard(ranking, self.settings.scoreboard_path)
         update_stats_with_battle(ranking, self.damage_log, self.settings.stats_path)
+        save_json(self.settings.last_run_damage_path, self.damage_log)
         save_json(self.settings.last_run_path, ranking)
 
         return BattleOutcome(ranking=ranking, video_path=video_path, frames=len(frames))
@@ -121,17 +129,18 @@ class VideoFightSimulator:
                 if alive:
                     winner_sprite = alive[0]
                     winner_sprite.alive = False  # hide in-world sprite, only show champion card
-                frame = self._draw_frame(sprites, winner_sprite)
-                for _ in range(self.config.fps * self.config.win_hold_seconds):
-                    frames.append(frame.copy())
+                hold_frames = self.config.fps * self.config.win_hold_seconds
+                for hold_idx in range(hold_frames):
+                    frame = self._draw_frame(sprites, winner_sprite, frame_idx + hold_idx)
+                    frames.append(frame)
                 break
 
-            frame = self._draw_frame(sprites, None)
+            frame = self._draw_frame(sprites, None, frame_idx)
             frames.append(frame)
             frame_idx += 1
 
         if not frames:
-            frames.append(self._draw_frame(sprites, None))
+            frames.append(self._draw_frame(sprites, None, frame_idx))
 
         return frames, winner_sprite
 
@@ -150,8 +159,18 @@ class VideoFightSimulator:
             speeds = list(range(-speed_mag, -5)) + list(range(6, speed_mag + 1))
             vx = float(random.choice(speeds))
             vy = float(random.choice(speeds))
+            effect_name = self._active_effect(username)
             sprites.append(
-                Sprite(username=username, image=avatar, x=x, y=y, vx=vx, vy=vy, base_image=base_avatar)
+                Sprite(
+                    username=username,
+                    image=avatar,
+                    x=x,
+                    y=y,
+                    vx=vx,
+                    vy=vy,
+                    base_image=base_avatar,
+                    effect_name=effect_name,
+                )
             )
         return sprites
 
@@ -302,7 +321,7 @@ class VideoFightSimulator:
 
     # Rendering ------------------------------------------------------------
 
-    def _draw_frame(self, sprites: List[Sprite], winner: Sprite | None) -> np.ndarray:
+    def _draw_frame(self, sprites: List[Sprite], winner: Sprite | None, frame_idx: int) -> np.ndarray:
         if self.background is None:
             self.background = self._generate_background(self.config.width, self.config.height)
         frame = self.background.copy()
@@ -315,6 +334,9 @@ class VideoFightSimulator:
             alive_count += 1
             pos = (int(sprite.x), int(sprite.y))
             sprite_img = sprite.image
+            effect_name = sprite.effect_name
+            if effect_name:
+                self._draw_effect_glow(frame, pos, sprite_img.size, effect_name, frame_idx)
             frame.paste(sprite_img, pos, sprite_img)
 
             bar_width = self.sprite_size
@@ -446,7 +468,7 @@ class VideoFightSimulator:
             bbox = painter.textbbox((0, 0), line, font=top_font)
             top_heights.append(bbox[3] - bbox[1])
         top_total_height = sum(top_heights) + line_gap * (len(top_lines) - 1)
-        top_y = max(24, (self.arena_top - top_total_height) * 0.7)
+        top_y = max(32, (self.arena_top - top_total_height) * 0.82)
 
         current_y = top_y
         for idx, line in enumerate(top_lines):
@@ -464,7 +486,7 @@ class VideoFightSimulator:
         bottom_bbox = painter.textbbox((0, 0), bottom_text, font=bottom_font)
         bottom_height = bottom_bbox[3] - bottom_bbox[1]
         bottom_margin_space = max(12, height - self.arena_bottom - bottom_height)
-        bottom_y = self.arena_bottom + bottom_margin_space * 0.4
+        bottom_y = self.arena_bottom + bottom_margin_space * 0.3
 
         self._draw_centered_label(
             painter,
@@ -507,48 +529,101 @@ class VideoFightSimulator:
             self.custom_cache.update(data)
         return self.custom_cache
 
-    def _decorate_avatar(self, username: str, img: Image.Image) -> Image.Image:
+    def _active_lookup(self, username: str) -> Dict[str, str]:
         customs = self._load_customizations()
-        user_custom = customs.get(username, {})
-        borders = user_custom.get("borders", [])
-        hats = user_custom.get("hats", [])
-        effects = user_custom.get("effects", [])
+        user_custom = customs.get(username, {}) if isinstance(customs, dict) else {}
+        if "masks" not in user_custom and "hats" in user_custom:
+            user_custom["masks"] = user_custom.get("hats", [])
+        applied = user_custom.get("applied", {}) if isinstance(user_custom.get("applied"), dict) else {}
+        # Backward compatibility: migrate legacy headgear key to masks
+        if "masks" not in applied and "hats" in applied:
+            applied["masks"] = applied.get("hats", "")
+        choices = {k: v for k, v in applied.items() if v}
+        if len(choices) > 1:
+            # enforce a single visible cosmetic: priority effects > masks > borders
+            priority = ("effects", "masks", "borders")
+            keep_cat = next((p for p in priority if p in choices), "")
+            keep_val = choices.get(keep_cat, "")
+            choices = {cat: (keep_val if cat == keep_cat else "") for cat in priority}
+        return {
+            "borders": choices.get("borders", ""),
+            "masks": choices.get("masks", ""),
+            "effects": choices.get("effects", ""),
+        }
+
+    def _active_border(self, username: str) -> str:
+        return self._active_lookup(username).get("borders", "")
+
+    def _active_mask(self, username: str) -> str:
+        return self._active_lookup(username).get("masks", "")
+
+    def _active_effect(self, username: str) -> str:
+        return self._active_lookup(username).get("effects", "")
+
+    def _decorate_avatar(self, username: str, img: Image.Image) -> Image.Image:
+        effect_name = self._active_effect(username)
+        mask_name = "" if effect_name else self._active_mask(username)
+        border_name = "" if effect_name or mask_name else self._active_border(username)
 
         base = img.copy()
         draw = ImageDraw.Draw(base)
 
-        if effects:
-            glow = Image.new("RGBA", base.size, (0, 0, 0, 0))
-            glow_draw = ImageDraw.Draw(glow)
-            color = (0, 200, 255, 90) if "Wave" in effects[0] else (255, 160, 30, 90)
-            glow_draw.ellipse(
-                [4, 4, base.size[0] - 4, base.size[1] - 4],
-                outline=color,
-                width=10,
-            )
-            glow = glow.filter(ImageFilter.GaussianBlur(radius=4))
-            base = Image.alpha_composite(glow, base)
-
-        if borders:
-            border_color = (255, 59, 59, 220) if "Red" in borders[0] else (0, 200, 255, 220)
+        if border_name:
+            border_color = (255, 59, 59, 220) if "Red" in border_name else (0, 200, 255, 220)
             draw.ellipse(
                 [1, 1, base.size[0] - 2, base.size[1] - 2],
                 outline=border_color,
                 width=4,
             )
 
-        if hats:
-            hat_icon = "^" if "Spartan" in hats[0] else "*"
-            hat_bg = Image.new("RGBA", (base.size[0], base.size[1]), (0, 0, 0, 0))
-            hat_draw = ImageDraw.Draw(hat_bg)
-            font = ImageFont.load_default()
-            w_val, h_val = hat_draw.textsize(hat_icon, font=font)
-            hx = (base.size[0] - w_val) // 2
-            hy = -2
-            hat_draw.text((hx, hy), hat_icon, font=font, fill=(255, 215, 0, 230))
-            base = Image.alpha_composite(base, hat_bg)
+        if mask_name:
+            base = apply_mask_to_avatar(base, mask_name)
 
         return base
+
+    def _draw_effect_glow(
+        self, frame: Image.Image, pos: Tuple[int, int], size: Tuple[int, int], effect_name: str, frame_idx: int
+    ) -> None:
+        """Overlay a pulsing glow effect around the sprite at the given position."""
+        glow_pad = max(12, int(size[0] * 0.22))
+        ring_size = (size[0] + glow_pad * 2, size[1] + glow_pad * 2)
+        layer = Image.new("RGBA", ring_size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(layer)
+
+        t = (frame_idx % 40) / 40.0
+        pulse = 0.6 + 0.4 * math.sin(2 * math.pi * t)
+        outer_color = (0, 210, 255, int(180 * pulse)) if "Wave" in effect_name else (255, 150, 40, int(180 * pulse))
+        inner_color = (0, 160, 230, int(140 * pulse)) if "Wave" in effect_name else (255, 110, 20, int(140 * pulse))
+        fill_color = (255, 255, 255, int(60 * pulse))
+
+        outer_width = max(8, int(size[0] * 0.12))
+        inner_width = max(5, int(size[0] * 0.08))
+        inset_outer = max(2, int(size[0] * 0.02))
+        inset_inner = inset_outer + max(6, int(size[0] * 0.05))
+
+        draw.ellipse(
+            [inset_outer, inset_outer, ring_size[0] - inset_outer, ring_size[1] - inset_outer],
+            outline=outer_color,
+            width=outer_width,
+        )
+        draw.ellipse(
+            [inset_inner, inset_inner, ring_size[0] - inset_inner, ring_size[1] - inset_inner],
+            outline=inner_color,
+            width=inner_width,
+        )
+        draw.ellipse(
+            [
+                inset_inner + 4,
+                inset_inner + 4,
+                ring_size[0] - inset_inner - 4,
+                ring_size[1] - inset_inner - 4,
+            ],
+            fill=fill_color,
+        )
+
+        blur_radius = max(6, int(size[0] * 0.08))
+        layer = layer.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+        frame.paste(layer, (pos[0] - glow_pad, pos[1] - glow_pad), layer)
 
     # Ranking & persistence ------------------------------------------------
 
@@ -558,9 +633,14 @@ class VideoFightSimulator:
             alive_sorted = sorted(alive, key=lambda sprite: sprite.health)
             for idx, sprite in enumerate(alive_sorted):
                 sprite.death_frame = total_frames + idx
+
+        # Ensure any survivors (the winner) get the highest death_frame so they rank first.
+        max_frame = max((sprite.death_frame if sprite.death_frame is not None else -1) for sprite in sprites)
         for sprite in sprites:
             if sprite.death_frame is None:
-                sprite.death_frame = -1
+                max_frame += 1
+                sprite.death_frame = max_frame
+
         sorted_sprites = sorted(sprites, key=lambda sprite: sprite.death_frame, reverse=True)
         ranking: List[Dict[str, object]] = []
         for order, sprite in enumerate(sorted_sprites, start=1):
@@ -621,6 +701,18 @@ class VideoFightSimulator:
     def _apply_sprite_size(self, size: int) -> None:
         self.sprite_size = size
         self.sprite_radius = self.sprite_size / 2
+
+    def _backup_run_state(self) -> None:
+        """Persist current scoreboard/stats so revert can restore exactly."""
+        try:
+            self.settings.last_run_scoreboard_backup_path.parent.mkdir(parents=True, exist_ok=True)
+            current_board = load_json(self.settings.scoreboard_path, {})
+            save_json(self.settings.last_run_scoreboard_backup_path, current_board)
+            current_stats = load_json(self.settings.stats_path, {})
+            save_json(self.settings.last_run_stats_backup_path, current_stats)
+        except Exception:
+            # If backup fails, we continue so the battle can still run; revert will warn.
+            pass
 
     def _set_sprite_geometry(self, fighter_count: int) -> None:
         self.starting_fighters = max(1, fighter_count)

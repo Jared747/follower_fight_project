@@ -1,0 +1,9 @@
+streamlit>=1.39.0
+pandas>=2.2.0
+numpy>=1.26.0
+pillow>=10.3.0
+python-dotenv>=1.0.1
+instaloader>=4.13
+moviepy>=1.0.3
+imageio-ffmpeg>=0.4.9
+stripe>=10.12.0

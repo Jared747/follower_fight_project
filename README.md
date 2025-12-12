@@ -7,7 +7,7 @@ python -m pip install --upgrade pip
 python -m pip install moviepy numpy pillow python-dotenv instaloader
 ```
 
-Instagram session (recommended):
+Instagram session (recommended): python 615_import_firefox_session.py -f ultimatefollowingchampionship-session
 - Place your saved session in `sessions/` as `ultimatefollowingchampionship-session`, **or**
 - Set `INSTAGRAM_USERNAME`, `INSTAGRAM_PASSWORD`, and optionally `INSTAGRAM_SESSION_FILE` to let the app refresh and cache the session automatically into `sessions/`.
 
@@ -28,13 +28,19 @@ This subtracts the last fight's points/runs from the current env scoreboard (e.g
 Run the UFC web app (Streamlit):
 ```
 streamlit run apps/web_app.py
+# or override env without editing .env (both forms work):
+# streamlit run apps/web_app.py -- dev
+# streamlit run apps/web_app.py -- --env prod
 ```
 You can log in by picking a follower handle, browse the leaderboard, view stats, customize your character, and buy power-ups. The app reads/writes env-scoped JSON files under `data/<env>/` (`scoreboard.json`, `stats.json`, `customizations.json`, `followers_cache.json`) and profile pictures under `follower_pp/`.
 
 Environments:
 - `.env` is auto-loaded; set `UFC_ENV=dev` (default) or `UFC_ENV=prod` to keep data and battle videos isolated (`data/<env>/`, `battles/<env>/`). Legacy top-level JSON files are treated as dev if present.
 - Override per-run without editing `.env`: `python scripts/fight_battle.py --env prod` or `python scripts/revert_last_run.py --env prod`.
-- Streamlit in prod: `$env:UFC_ENV='prod'; streamlit run apps/web_app.py`
+- Streamlit in prod: `$env:UFC_ENV='prod'; streamlit run apps/web_app.py` (or `streamlit run apps/web_app.py -- --env prod` / `-- prod`)
+
+Deployment:
+- AWS EC2 + Nginx + systemd guide: `deploy/aws-ec2.md`.
 
 ## Project structure (refactored)
 - `ufc_fight/` – core package (settings, storage, followers, simulation/video, scoreboard, stats).
