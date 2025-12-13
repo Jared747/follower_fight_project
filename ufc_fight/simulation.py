@@ -7,16 +7,23 @@ from .scoreboard import update_scoreboard
 from .settings import Settings, get_settings
 from .storage import save_json
 
+DEFAULT_HEALTH = 100.0
+# Keep manual HP overrides tiny so results stay believable.
+HEALTH_OVERRIDES: Dict[str, float] = {
+}
+
 
 def run_fight(followers: Iterable[Mapping[str, object]]) -> List[Dict[str, object]]:
     """Simulate an elimination fight among followers (non-visual)."""
     fighters: List[Dict[str, object]] = []
     for follower in followers:
+        username = follower.get("username")
+        base_health = HEALTH_OVERRIDES.get(str(username), DEFAULT_HEALTH)
         fighters.append(
             {
-                "username": follower.get("username"),
+                "username": username,
                 "profile_pic": follower.get("profile_pic"),
-                "health": 100.0,
+                "health": base_health,
             }
         )
 

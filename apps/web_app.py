@@ -48,6 +48,8 @@ SCOREBOARD_PATH = settings.scoreboard_path
 STATS_PATH = settings.stats_path
 CUSTOM_PATH = settings.custom_path
 FOLLOWER_CACHE_PATH = settings.follower_cache_path
+NAV_MAIN = ["Leaderboard", "My Stats", "Character", "Power Ups"]
+NAV_BOTTOM = ["Support", "Logout"]
 # Map item name -> Stripe Price ID (fill in real values)
 STRIPE_PRICE_IDS = {
     # "Red Steel": "price_xxx",
@@ -133,13 +135,13 @@ def avatar_with_mask_html(pic_src: str, mask_name: str, size: int = 36, margin_r
     )
     mask_html = ""
     if mask_name:
-        # Slightly smaller mask and positioned well above the circle
-        mask_width = int(size * 0.65)
+        # Render mask inside the circle
+        mask_width = int(size * 0.7)
         mask_uri = mask_data_uri(mask_name, size=mask_width)
-        mask_offset = int(size * 0.78)
+        mask_offset = 0
         mask_html = (
             f"<img src='{mask_uri}' class='avatar-mask' alt='{mask_name}' "
-            f"style='position:absolute; left:50%; transform:translateX(-50%); width:{mask_width}px; top:-{mask_offset}px;' />"
+            f"style='position:absolute; left:50%; transform:translateX(-50%); width:{mask_width}px; top:{-mask_offset}px;' />"
         )
     style = f"position:relative;width:{size}px;height:{size}px;overflow:visible;"
     if margin_right:
@@ -243,7 +245,14 @@ def ensure_custom(user: str) -> Dict[str, List[str]]:
 def inject_css() -> None:
     css = """
     <style>
-    html, body, .stApp, [data-testid="stAppViewContainer"], [data-testid="stSidebar"], .main {background:#0E0C0B !important;}
+    @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Bebas+Neue&display=swap');
+    :root {
+        --ufc-red: #BE1A17;
+        --font-body: 'Barlow', 'Segoe UI', sans-serif;
+        --font-heading: 'Bebas Neue', 'Barlow', sans-serif;
+        --login-field-width: 320px;
+    }
+    html, body, .stApp, [data-testid="stAppViewContainer"], [data-testid="stSidebar"], .main {background:#0E0C0B !important; font-family:var(--font-body);}
     body {background:#0E0C0B;}
     .block-container {padding-top: 0rem;}
     .ufc-hero {background: linear-gradient(135deg, #0a0a0a, #1a0000); border:1px solid #ff3b3b33; padding:18px; border-radius:18px; box-shadow:0 12px 32px rgba(0,0,0,.45);}
@@ -252,11 +261,12 @@ def inject_css() -> None:
     .store-card {border:1px solid #ffffff22; border-radius:12px; padding:12px; background:rgba(255,255,255,0.03);}
     .owned {opacity:0.65;}
     .login-card {background:#000; padding:28px; border-radius:16px; border:none; box-shadow:0 20px 50px rgba(0,0,0,0.75);}
-    .login-input input {background:#050505 !important; color:#f5f5f5 !important; border:1px solid #ff3b3b55 !important; border-radius:10px !important;}
-    .login-button button {background:linear-gradient(90deg,#ff3b3b,#b10000) !important; color:#fff !important; border:none !important; border-radius:12px !important; height:52px; font-weight:700; letter-spacing:1px;}
+    .login-input input {background:#fff !important; color:#f5f5f5 !important; border:1px solid var(--ufc-red) !important; border-radius:10px !important;}
+    .login-button button {background:var(--ufc-red) !important; color:#BE1A17 !important; border:none !important; border-radius:12px !important; height:52px; font-weight:700; letter-spacing:1px; font-family:var(--font-heading); text-transform:uppercase;}
     .suggestion-box {border:none; background:transparent; padding:0; max-height:220px; overflow-y:auto;}
     .suggestion-item {padding:10px; border-radius:8px; color:#f5f5f5;}
     .suggestion-item:hover {background:#ff3b3b33; cursor:pointer;}
+    .suggestions-title {text-align:center; color:var(--ufc-red); font-weight:800; font-size:18px; margin:2px 0 6px 0; letter-spacing:0.3px;}
     [data-testid="stSidebar"] > div {display:flex; flex-direction:column; height:100vh;}
     [data-testid="stSidebar"] .stButton>button {background:linear-gradient(90deg,#1b1b1b,#2b0a0a); border:1px solid #ff3b3b55; color:#f5f5f5; border-radius:12px; width:100%; height:46px; font-weight:600; letter-spacing:0.5px;}
     [data-testid="stSidebar"] .stButton>button:hover {border-color:#ff5555; color:#fff;}
@@ -264,48 +274,130 @@ def inject_css() -> None:
     [data-testid="stSidebar"] .nav-tab.active {background:linear-gradient(90deg,#ff3b3b,#b10000); border-color:#ff3b3b; color:#fff;}
     .preview-frame {width:128px; height:128px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:auto; background:linear-gradient(135deg,#1c1c1c,#0a0a0a); position:relative; overflow:visible; box-shadow:0 8px 28px rgba(0,0,0,0.45);}
     .preview-avatar-img {width:116px; height:116px; border-radius:50%; object-fit:cover; object-position:center;}
-    .preview-mask {position:absolute; top:-52px; left:50%; transform:translateX(-50%); width:52px; pointer-events:none; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.45));}
+    .preview-mask {position:absolute; top:-6px; left:50%; transform:translateX(-50%); width:60px; pointer-events:none; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.45));}
     .avatar-with-mask {overflow:visible;}
-    .avatar-mask {position:absolute; left:50%; transform:translateX(-50%); top:-28px; width:30px; pointer-events:none; filter:drop-shadow(0 3px 10px rgba(0,0,0,0.5));}
+    .avatar-mask {position:absolute; left:50%; transform:translateX(-50%); top:-4px; width:34px; pointer-events:none; filter:drop-shadow(0 3px 10px rgba(0,0,0,0.5));}
     .preview-effect {position:absolute; inset:-6px; border-radius:50%; box-shadow:0 0 18px 6px rgba(255,59,59,0.35);}
+    .leaderboard-list {display:flex; flex-direction:column; gap:12px;}
+    .leaderboard-card {border:1px solid #ffffff18; border-radius:14px; padding:12px 14px; background:#0f0c0c; color:#f5f5f5; box-shadow:0 10px 26px rgba(0,0,0,0.35);}
+    .leaderboard-card .top {display:flex; align-items:center; justify-content:space-between; gap:12px;}
+    .leaderboard-card .user {display:flex; align-items:center; gap:10px; font-weight:700;}
+    .leaderboard-card .rank {font-weight:800; color:#ffdedb; letter-spacing:0.6px;}
+    .leaderboard-card .stats {display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top:10px;}
+    .leaderboard-card .stat-label {color:#999; font-size:12px; letter-spacing:0.4px;}
+    .leaderboard-card .stat-value {font-size:18px; font-weight:700;}
+    .stats-grid {display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px;}
+    .damage-list {display:flex; flex-direction:column; gap:10px;}
+    .damage-card {border:1px solid #ffffff18; border-radius:14px; padding:12px 14px; background:#0f0c0c; color:#f5f5f5;}
+    .damage-card .row {display:flex; align-items:center; justify-content:space-between; gap:10px;}
+    .damage-card .label {color:#999; font-size:12px; letter-spacing:0.4px;}
+    .damage-card .value {font-size:16px; font-weight:700;}
+    .login-title {text-align:center; margin:4px 0 6px 0; color:var(--ufc-red) !important; text-transform:uppercase; letter-spacing:2px; font-family:var(--font-heading); font-size:32px;}
+    .login-subtext {text-align:center; margin:-2px 0 10px 0; color:#cccccc;}
+    .login-form {display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px;}
+    .login-form .stTextInput>div>div {width:var(--login-field-width); max-width:92vw; margin:0 auto;}
+    .login-form .stTextInput>div>div input {text-align:center; font-family:var(--font-body);}
+    .login-form .stButton {display:flex; justify-content:center; width:var(--login-field-width); max-width:92vw; margin:0 auto;}
+    .login-form .stButton>button {display:block; width:100%; max-width:100%; margin:4px auto 0 auto; background:var(--ufc-red) !important; color:#fff !important; border:1px solid var(--ufc-red) !important; border-radius:12px; height:52px; font-weight:700; letter-spacing:1.1px; text-transform:uppercase; font-family:var(--font-heading); box-shadow:0 8px 18px rgba(190,26,23,0.35);}
+    .login-pane form {display:flex; flex-direction:column; align-items:center; gap:10px; margin-top:4px;}
+    .login-pane form input {width:var(--login-field-width) !important; max-width:92vw; margin:0 auto;}
+    .login-pane form button {width:var(--login-field-width) !important; max-width:92vw; margin:2px auto 0 auto !important; display:block; background:var(--ufc-red) !important; color:#fff !important; border:1px solid var(--ufc-red) !important; height:52px; border-radius:12px;}
+    .login-pane .stButton>button {background:var(--ufc-red) !important; color:#fff !important; width:var(--login-field-width); max-width:92vw; height:52px; border:1px solid var(--ufc-red) !important; border-radius:12px;}
+    .login-hero-wrap {display:flex; align-items:center; justify-content:center; text-align:center; padding:0 0 4px 0; margin-top:-140px;}
+    .login-hero-img {width:min(78vw, 500px); height:auto; max-height:320px; object-fit:contain;}
+    @media (max-width: 1200px){
+        .block-container {padding-left:16px !important; padding-right:16px !important;}
+        [data-testid="stSidebar"] > div {height:auto;}
+    }
+    @media (max-width: 900px){
+        html, body, .stApp {overflow-x:hidden;}
+        [data-testid="stHorizontalBlock"] {flex-direction:column !important;}
+        [data-testid="column"] {width:100% !important; padding-left:0 !important; padding-right:0 !important;}
+        [data-testid="stSidebar"] {width:100% !important; position:relative;}
+        [data-testid="stSidebar"] > div {height:auto;}
+        .block-container {padding-left:12px !important; padding-right:12px !important;}
+        .leaderboard-card .top {flex-direction:column; align-items:flex-start;}
+        .leaderboard-card .stats {grid-template-columns:repeat(2,minmax(0,1fr));}
+        .stats-grid {grid-template-columns:1fr;}
+        .preview-frame {width:110px; height:110px;}
+        .preview-avatar-img {width:98px; height:98px;}
+        .damage-card .row {flex-direction:column; align-items:flex-start;}
+        .login-hero-img {max-height:220px; width:min(88vw, 420px);}
+        .login-pane {padding:16px;}
+        .login-form .stTextInput>div>div input {text-align:center;}
+        .login-hero-wrap {margin-top:-90px;}
+    }
+    @media (max-width: 680px){
+        .leaderboard-card .stats {grid-template-columns:1fr;}
+    }
+    @media (max-width: 540px){
+        .block-container {padding-left:10px !important; padding-right:10px !important;}
+        .leaderboard-card {padding:10px 12px;}
+        .preview-frame {width:96px; height:96px;}
+        .preview-avatar-img {width:86px; height:86px;}
+        .login-card {padding:20px;}
+        .login-hero-wrap {margin-top:-50px;}
+        .login-hero-img {max-height:180px;}
+    }
     </style>
     """
     st.markdown(css, unsafe_allow_html=True)
 
 
 def login_screen(followers: List[str]) -> None:
-    col_left, col_right = st.columns([6, 6], gap="large")
-    with col_left:
-        img_src = encode_image(settings.login_image_path)
-        if img_src:
-            st.markdown(
-                f"<div style='height:90vh;display:flex;align-items:center;justify-content:center;'>"
-                f"<img src=\"{img_src}\" style='width:100%;object-fit:contain;'/>"
-                f"</div>",
-                unsafe_allow_html=True,
-            )
-        else:
-            st.image(str(settings.login_image_path), use_container_width=True)
-    with col_right:
-        st.markdown("<div style='height:10vh'></div>", unsafe_allow_html=True)
-        st.markdown("<h3 style='color:#ff3b3b;text-transform:uppercase;letter-spacing:2px;margin:0;'>Enter the Octagon</h3>", unsafe_allow_html=True)
-        query = st.text_input("Username", key="login_query", label_visibility="collapsed", placeholder="Type your handle", help=None)
-        filtered = [f for f in followers if query.lower() in f.lower()] if query else followers[:10]
-        suggestions = filtered[:8]
-        if query and suggestions:
-            st.markdown("**Suggestions**", unsafe_allow_html=True)
-            chip_cols = st.columns(4)
-            for idx, name in enumerate(suggestions):
-                with chip_cols[idx % 4]:
-                    if st.button(name, key=f"pick-{name}", use_container_width=True):
-                        st.session_state["user"] = name
-                        st.rerun()
+    st.markdown("<div class='login-pane'>", unsafe_allow_html=True)
+    img_src = encode_image(settings.login_image_path)
+    if img_src:
+        st.markdown(
+            f"<div class='login-hero-wrap'>"
+            f"<img src=\"{img_src}\" class='login-hero-img' alt='UFC login hero'/>"
+            f"</div>",
+            unsafe_allow_html=True,
+        )
+    else:
+        st.image(str(settings.login_image_path), use_container_width=True)
+
+    st.markdown("<h3 class='login-title'>Enter the Octagon</h3>", unsafe_allow_html=True)
+    st.markdown("<p class='login-subtext'>Enter insta handle to log in</p>", unsafe_allow_html=True)
+    st.markdown("<div class='login-form'>", unsafe_allow_html=True)
+    def _attempt_login() -> None:
+        st.session_state["login_attempt"] = st.session_state.get("login_query", "").strip()
+    query = st.text_input("Username", key="login_query", label_visibility="collapsed", placeholder="Type your handle", help=None, on_change=_attempt_login)
+    submitted = st.button("Enter", key="login_button", use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    attempt_val = st.session_state.pop("login_attempt", None) if "login_attempt" in st.session_state else None
+    if submitted and query:
+        attempt_val = query.strip()
+    if attempt_val:
+        if attempt_val in followers:
+            st.session_state["user"] = attempt_val
+            st.rerun()
+
+    normalized_followers = sorted({str(f).strip() for f in followers if str(f).strip()}, key=str.lower)
+    q = query.strip().lstrip("@").lower()
+    if q:
+        prefix_matches = [f for f in normalized_followers if f.lower().startswith(q)]
+        contains_matches = [f for f in normalized_followers if q in f.lower() and f not in prefix_matches]
+        filtered = prefix_matches + contains_matches
+    else:
+        filtered = normalized_followers[:20]
+    suggestions = filtered[:50]
+    if query and suggestions:
+        st.markdown("<div class='suggestions-title'>Suggestions</div>", unsafe_allow_html=True)
+        chip_cols = st.columns(2)
+        for idx, name in enumerate(suggestions):
+            with chip_cols[idx % 2]:
+                if st.button(name, key=f"pick-{name}", use_container_width=True):
+                    st.session_state["user"] = name
+                    st.rerun()
+    elif query and not suggestions:
+        st.info("No matching followers yet. Try a different handle.")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def render_sidebar_nav() -> str:
-    nav_main = ["Leaderboard", "My Stats", "Character", "Power Ups"]
-    nav_bottom = ["Support", "Logout"]
-    active = st.session_state.get("nav", nav_main[0])
+    active = st.session_state.get("nav", NAV_MAIN[0])
 
     img_src = encode_image(settings.login_image_path)
     if img_src:
@@ -314,7 +406,7 @@ def render_sidebar_nav() -> str:
             unsafe_allow_html=True,
         )
 
-    for item in nav_main:
+    for item in NAV_MAIN:
         if item == active:
             st.sidebar.markdown(f"<div class='nav-tab active'>{item}</div>", unsafe_allow_html=True)
         else:
@@ -324,7 +416,7 @@ def render_sidebar_nav() -> str:
 
     st.sidebar.markdown("<div style='flex:1 1 auto;'></div><div style='height:12px;'></div>", unsafe_allow_html=True)
 
-    for item in nav_bottom:
+    for item in NAV_BOTTOM:
         if item == active:
             st.sidebar.markdown(f"<div class='nav-tab active'>{item}</div>", unsafe_allow_html=True)
         else:
@@ -366,7 +458,7 @@ def load_scoreboard_df() -> pd.DataFrame:
 
 def leaderboard_page() -> None:
     st.markdown(
-        "<h2 style='color:#ff3b3b;text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;'>Leaderboard</h2>",
+        "<h2 style='color:#ff3b3b;text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;text-align:center;'>Leaderboard</h2>",
         unsafe_allow_html=True,
     )
     stats = load_json(STATS_PATH, {})
@@ -391,43 +483,27 @@ def leaderboard_page() -> None:
     for idx, row in enumerate(rows, start=1):
         row["rank"] = idx
 
-    header_html = """
-    <div style="display:grid;grid-template-columns:90px 1.6fr 1fr 1fr 1fr;gap:12px;
-                padding:14px 16px;border-radius:12px;border:1px solid #ff3b3b55;
-                background:linear-gradient(90deg,#1a0a0a,#120808);color:#f5f5f5;
-                font-weight:700;letter-spacing:0.5px;">
-        <div>Rank</div>
-        <div>Username</div>
-        <div style="text-align:right;">Points</div>
-        <div style="text-align:right;">Games</div>
-        <div style="text-align:right;">Total Damage</div>
-    </div>
-    """
-    st.markdown(header_html, unsafe_allow_html=True)
-
     row_html_parts = []
     for row in rows:
         crown = crown_svg() if row["wins"] > 0 else ""
         mask_name = get_active_mask(row["user"], custom_data)
         avatar = avatar_with_mask_html(row["pic"], mask_name, size=36, margin_right=10, initial=row["user"][:1])
         row_html_parts.append(
-            f"""
-            <div style="display:grid;grid-template-columns:90px 1.6fr 1fr 1fr 1fr;gap:12px;
-                        padding:12px 16px;margin-top:10px;border-radius:12px;
-                        border:1px solid #ffffff18;background:#0f0c0c;color:#f5f5f5;
-                        align-items:center;">
-                <div style="font-weight:700;color:#ffdedb;display:flex;align-items:center;gap:6px;">
-                    <span>#{row['rank']}</span>{crown}
-                </div>
-                <div style="display:flex;align-items:center;font-weight:600;">{avatar}<span>@{row['user']}</span></div>
-                <div style="text-align:right;">{row['points']}</div>
-                <div style="text-align:right;">{row['runs']}</div>
-                <div style="text-align:right;">{row['damage']}</div>
-            </div>
-            """
+            f"<div class='leaderboard-card'>"
+            f"<div class='top'>"
+            f"<div class='user'>{avatar}<div>@{row['user']}</div></div>"
+            f"<div class='rank'>#{row['rank']}{crown}</div>"
+            f"</div>"
+            f"<div class='stats'>"
+            f"<div><div class='stat-label'>Points</div><div class='stat-value'>{row['points']}</div></div>"
+            f"<div><div class='stat-label'>Games</div><div class='stat-value'>{row['runs']}</div></div>"
+            f"<div><div class='stat-label'>Total Damage</div><div class='stat-value'>{row['damage']}</div></div>"
+            f"</div>"
+            f"</div>"
         )
 
-    st.markdown("".join(row_html_parts), unsafe_allow_html=True)
+    leaderboard_html = "<div class='leaderboard-list'>" + "".join(row_html_parts) + "</div>"
+    st.markdown(leaderboard_html, unsafe_allow_html=True)
 
 
 def my_stats_page(user: str) -> None:
@@ -452,7 +528,7 @@ def my_stats_page(user: str) -> None:
         st.markdown(avatar_html, unsafe_allow_html=True)
     with col_meta:
         stat_html = f"""
-        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;">
+        <div class='stats-grid'>
             <div class='metric-card'><div style='color:#999;font-size:12px;'>Matches</div><div style='font-size:24px;font-weight:700;color:#fff;'>{matches}</div></div>
             <div class='metric-card'><div style='color:#999;font-size:12px;'>Wins</div><div style='font-size:24px;font-weight:700;color:#fff;'>{wins}</div></div>
             <div class='metric-card'><div style='color:#999;font-size:12px;'>Total Damage</div><div style='font-size:24px;font-weight:700;color:#fff;'>{int(dmg)}</div></div>
@@ -481,32 +557,19 @@ def my_stats_page(user: str) -> None:
             "<h4 style='color:#ff3b3b;letter-spacing:1px;margin:12px 0;'>Top damage dealt</h4>",
             unsafe_allow_html=True,
         )
-        header_html = """
-        <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:12px;
-                    padding:12px 16px;border-radius:12px;border:1px solid #ff3b3b55;
-                    background:linear-gradient(90deg,#1a0a0a,#120808);color:#f5f5f5;
-                    font-weight:700;letter-spacing:0.5px;">
-            <div>Opponent</div>
-            <div style="text-align:right;">Damage</div>
-            <div style="text-align:right;">Hits</div>
-        </div>
-        """
-        st.markdown(header_html, unsafe_allow_html=True)
         rows_html = []
         for opponent, data in top_targets:
             rows_html.append(
-                f"""
-                <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:12px;
-                            padding:10px 16px;margin-top:8px;border-radius:12px;
-                            border:1px solid #ffffff18;background:#0f0c0c;color:#f5f5f5;
-                            align-items:center;">
-                    <div style="font-weight:600;">@{opponent}</div>
-                    <div style="text-align:right;">{int(data.get('damage', 0))}</div>
-                    <div style="text-align:right;">{data.get('hits', 0)}</div>
-                </div>
-                """
+                f"<div class='damage-card'>"
+                f"<div class='row'>"
+                f"<div><div class='label'>Opponent</div><div class='value'>@{opponent}</div></div>"
+                f"<div><div class='label'>Damage</div><div class='value'>{int(data.get('damage', 0))}</div></div>"
+                f"<div><div class='label'>Hits</div><div class='value'>{data.get('hits', 0)}</div></div>"
+                f"</div>"
+                f"</div>"
             )
-        st.markdown("".join(rows_html), unsafe_allow_html=True)
+        damage_html = "<div class='damage-list'>" + "".join(rows_html) + "</div>"
+        st.markdown(damage_html, unsafe_allow_html=True)
 
 
 STORE_ITEMS = {
@@ -543,7 +606,7 @@ def character_page(user: str) -> None:
         if category == "borders":
             border_color = "#ff3b3b" if "Red" in item_name else "#00e0ff"
         if category == "masks":
-            mask_icon = mask_data_uri(item_name, size=60)
+            mask_icon = mask_data_uri(item_name, size=72)
             border_color = "#111"
         if category == "effects":
             border_color = "#222"
@@ -668,6 +731,29 @@ def support_page() -> None:
 
 def app():
     st.set_page_config(page_title="Ultimate Followers Championship", layout="wide", page_icon=PAGE_ICON)
+    st.markdown(
+        """
+        <style>
+        html,body,#root,[data-testid="stAppViewContainer"],[data-testid="stApp"],.main,.block-container{
+          margin:0 !important;
+          padding:0 !important;
+          background:#0E0C0B !important;
+          width:100%;
+          height:100%;
+          overflow-x:hidden;
+        }
+        [data-testid="stAppViewContainer"] > header,
+        [data-testid="stHeader"],
+        header {display:none !important; height:0 !important; padding:0 !important; margin:0 !important;}
+        [data-testid="stToolbar"],
+        [data-testid="stActionMenu"],
+        [data-testid="baseButton-toolbar"] {display:none !important;}
+        .main {padding:0 !important;}
+        .block-container{padding-top:0 !important;padding-left:0 !important;padding-right:0 !important;}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
     inject_css()
     followers = load_followers_cache()
     user = st.session_state.get("user")

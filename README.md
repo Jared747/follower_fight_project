@@ -41,6 +41,7 @@ Environments:
 
 Deployment:
 - AWS EC2 + Nginx + systemd guide: `deploy/aws-ec2.md`.
+- Sync local code + prod data/profile images to EC2: `deploy/sync_to_ec2.ps1` (excludes `.env`, `.venv`, `battles/`, `sessions/`, `data/dev`, and other temp files).
 
 ## Project structure (refactored)
 - `ufc_fight/` – core package (settings, storage, followers, simulation/video, scoreboard, stats).

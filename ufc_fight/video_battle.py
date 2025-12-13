@@ -19,6 +19,12 @@ from .settings import Settings, get_settings
 from .stats import update_stats_with_battle
 from .storage import load_json, save_json
 
+DEFAULT_HEALTH = 100.0
+# Temporary/manual buffs per user; remove entries when you want an even field again.
+HEALTH_OVERRIDES: Dict[str, float] = {
+    "http_tiaan": 115.0,  # small HP edge for the next video
+}
+
 
 @dataclass
 class Sprite:
@@ -28,7 +34,7 @@ class Sprite:
     y: float
     vx: float
     vy: float
-    health: float = 100.0
+    health: float = DEFAULT_HEALTH
     alive: bool = True
     death_frame: int | None = None
     last_hit_frame: int = -999
@@ -160,6 +166,7 @@ class VideoFightSimulator:
             vx = float(random.choice(speeds))
             vy = float(random.choice(speeds))
             effect_name = self._active_effect(username)
+            base_health = HEALTH_OVERRIDES.get(username, DEFAULT_HEALTH)
             sprites.append(
                 Sprite(
                     username=username,
@@ -168,6 +175,7 @@ class VideoFightSimulator:
                     y=y,
                     vx=vx,
                     vy=vy,
+                    health=base_health,
                     base_image=base_avatar,
                     effect_name=effect_name,
                 )
@@ -341,7 +349,7 @@ class VideoFightSimulator:
 
             bar_width = self.sprite_size
             bar_x, bar_y = pos[0], pos[1] + self.sprite_size + 6
-            hp_ratio = max(0.0, min(1.0, sprite.health / 100.0))
+            hp_ratio = max(0.0, min(1.0, sprite.health / DEFAULT_HEALTH))
             hp_width = int(bar_width * hp_ratio)
             draw.rectangle([bar_x, bar_y, bar_x + bar_width, bar_y + bar_height], fill=(35, 35, 35))
             if hp_width > 0:
