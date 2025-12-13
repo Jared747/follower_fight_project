@@ -305,6 +305,13 @@ def inject_css() -> None:
     .login-pane .stButton>button {background:var(--ufc-red) !important; color:#fff !important; width:var(--login-field-width); max-width:92vw; height:52px; border:1px solid var(--ufc-red) !important; border-radius:12px;}
     .login-hero-wrap {display:flex; align-items:center; justify-content:center; text-align:center; padding:0 0 4px 0; margin-top:-140px;}
     .login-hero-img {width:min(78vw, 500px); height:auto; max-height:320px; object-fit:contain;}
+    .mobile-nav {display:none; position:sticky; top:0; z-index:1000; background:linear-gradient(135deg,#0f0c0c,#1c0a0a); padding:10px 12px; margin:-8px -4px 10px -4px; border-bottom:1px solid #ff3b3b33; box-shadow:0 8px 20px rgba(0,0,0,0.45);}
+    .mobile-nav .stButton>button {width:100%; border-radius:12px; background:linear-gradient(90deg,#1b1b1b,#2b0a0a); border:1px solid #ff3b3b55; color:#f5f5f5; font-weight:700; letter-spacing:0.5px;}
+    .mobile-nav .stButton>button:hover {border-color:#ff5555; color:#fff;}
+    .mobile-nav .stExpander {border:1px solid #ffffff18; border-radius:12px; background:rgba(255,255,255,0.04);}
+    .mobile-nav [data-testid="stExpander"] details summary {padding:12px; font-weight:800; letter-spacing:0.5px; color:#ffdedb;}
+    .mobile-nav [data-testid="stExpander"] details {padding:6px 10px 10px 10px;}
+    .mobile-nav .nav-label {font-size:14px; color:#aaaaaa; text-transform:uppercase; letter-spacing:1px; margin:6px 0 4px 2px;}
     @media (max-width: 1200px){
         .block-container {padding-left:16px !important; padding-right:16px !important;}
         [data-testid="stSidebar"] > div {height:auto;}
@@ -326,6 +333,8 @@ def inject_css() -> None:
         .login-pane {padding:16px;}
         .login-form .stTextInput>div>div input {text-align:center;}
         .login-hero-wrap {margin-top:-90px;}
+        .mobile-nav {display:block;}
+        [data-testid="stSidebar"] {display:none !important;}
     }
     @media (max-width: 680px){
         .leaderboard-card .stats {grid-template-columns:1fr;}
@@ -425,6 +434,25 @@ def render_sidebar_nav() -> str:
                 st.rerun()
 
     return active
+
+
+def render_mobile_nav(active: str) -> None:
+    """Show a sticky mobile navigation drawer when the sidebar is hidden."""
+
+    st.markdown("<div class='mobile-nav'>", unsafe_allow_html=True)
+    with st.expander(f"☰ {active}", expanded=False):
+        st.markdown("<div class='nav-label'>Navigate</div>", unsafe_allow_html=True)
+        for item in NAV_MAIN:
+            if st.button(item, key=f"mobile-nav-{item}", use_container_width=True):
+                st.session_state["nav"] = item
+                st.rerun()
+
+        st.markdown("<div class='nav-label'>Account</div>", unsafe_allow_html=True)
+        for item in NAV_BOTTOM:
+            if st.button(item, key=f"mobile-nav-{item}", use_container_width=True):
+                st.session_state["nav"] = item
+                st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def top_bar(user: str) -> None:
@@ -761,6 +789,8 @@ def app():
         login_screen(followers)
         return
 
+    active_nav = st.session_state.get("nav", NAV_MAIN[0])
+    render_mobile_nav(active_nav)
     nav = render_sidebar_nav()
 
     if nav == "Logout":
